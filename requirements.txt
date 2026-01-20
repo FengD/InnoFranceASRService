@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+torch # https://download.pytorch.org/whl/cu128
+torchaudio # https://download.pytorch.org/whl/cu128
+transformers
+requests
+prometheus_client
+slowapi
+python-multipart
+datasets[audio]
+accelerate
+logger
+boto3
+pyannote.audio
