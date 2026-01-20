@@ -32,7 +32,7 @@ class WhisperASR:
 
         # Initialize speaker diarization pipeline
         try:
-            self.speaker_pipeline = Pipeline.from_pretrained("/mnt/fd9ef272-d51b-4896-bfc8-9beaa52ae4a5/dingfeng1/speaker-diarization-community-1/")
+            self.speaker_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-community-1/")
             self.speaker_pipeline.to(torch.device(self.device))
             self.logger.info("speaker diarization pipeline loaded")
         except Exception as e:
