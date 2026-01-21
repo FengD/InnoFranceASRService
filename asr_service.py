@@ -32,7 +32,7 @@ class WhisperASR:
 
         # Initialize speaker diarization pipeline
         try:
-            self.speaker_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-community-1/")
+            self.speaker_pipeline = Pipeline.from_pretrained(os.getenv("DIARIZATION_MODEL_PATH", "pyannote/speaker-diarization-3.1"))
             self.speaker_pipeline.to(torch.device(self.device))
             self.logger.info("speaker diarization pipeline loaded")
         except Exception as e:
@@ -105,7 +105,8 @@ class WhisperASR:
 
         try:
             # Use pyannote for speaker diarization
-            diarization = self.speaker_pipeline(audio_path)
+            output = self.speaker_pipeline(audio_path)
+            diarization = output.speaker_diarization
             
             speakers = []
             for turn, _, speaker in diarization.itertracks(yield_label=True):
@@ -165,7 +166,34 @@ class WhisperASR:
             segment["speaker"] = assigned_speaker
         
         return segments
-
+        
+    def merge_consecutive_speakers(self, segments):
+        """Merge consecutive segments from the same speaker"""
+        if not segments:
+            return segments
+            
+        merged = []
+        current_segment = segments[0].copy()
+        
+        for i in range(1, len(segments)):
+            next_segment = segments[i]
+            
+            # If same speaker, merge the segments
+            if next_segment["speaker"] == current_segment["speaker"]:
+                # Extend the end time
+                current_segment["end"] = next_segment["end"]
+                # Concatenate the text
+                current_segment["text"] += " " + next_segment["text"]
+            else:
+                # Different speaker, save current segment and start new one
+                merged.append(current_segment)
+                current_segment = next_segment.copy()
+        
+        # Don't forget the last segment
+        merged.append(current_segment)
+        
+        return merged
+        
     def transcribe_segment(self, audio_segment, sr, language):
         """Transcribe a single audio segment"""
         inputs = self.processor(
@@ -291,11 +319,14 @@ class WhisperASR:
         for result in results:
             result["speaker"] = speaker_mapping[result["speaker"]]
         
+        # Merge consecutive segments from the same speaker
+        merged_results = self.merge_consecutive_speakers(results)
+        
         self.logger.info(
             "transcribe with speaker diarization done",
-            extra={"trace_id": trace_id, "segments": len(results), "speakers": len(unique_speakers)}
+            extra={"trace_id": trace_id, "segments": len(merged_results), "speakers": len(unique_speakers)}
         )
-        return results
+        return merged_results
 
     def _transcribe_fallback(self, audio, sr, language, chunk_length, trace_id: str):
         """Fallback method using original chunking approach"""

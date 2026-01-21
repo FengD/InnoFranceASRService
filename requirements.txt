@@ -11,4 +11,4 @@ datasets[audio]
 accelerate
 logger
 boto3
-pyannote.audio
+pyannote.audio>=3.1.0

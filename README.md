@@ -84,6 +84,7 @@ curl -X POST http://localhost:8000/transcribe \
 ## Environment Variables
 
 - `WHISPER_MODEL_PATH`: Path to the Whisper model
+- `DIARIZATION_MODEL_PATH`: Path to the speaker diarization model (default: pyannote/speaker-diarization-3.1)
 - `LOG_LEVEL`: Log level (default INFO)
 - `API_TOKENS`: List of allowed API tokens (comma separated)
 
