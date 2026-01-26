@@ -104,8 +104,32 @@ class WhisperASR:
             return None
 
         try:
-            # Use pyannote for speaker diarization
-            output = self.speaker_pipeline(audio_path)
+            # Load audio and ensure it's at the correct sample rate for pyannote
+            audio, sr = torchaudio.load(audio_path)
+            self.logger.info(f"Loaded audio with sample rate: {sr}Hz, shape: {audio.shape}", extra={"trace_id": trace_id})
+            
+            # PyAnnote typically expects 16kHz audio
+            if sr != 16000:
+                self.logger.info(f"Resampling audio from {sr}Hz to 16000Hz", extra={"trace_id": trace_id})
+                resampler = torchaudio.transforms.Resample(sr, 16000)
+                audio = resampler(audio)
+                # Save the resampled audio to a temporary file
+                import tempfile
+                import torchaudio as ta
+                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                    ta.save(tmp.name, audio, 16000)
+                    resampled_audio_path = tmp.name
+                self.logger.info(f"Saved resampled audio to temporary file: {resampled_audio_path}", extra={"trace_id": trace_id})
+                
+                # Use the resampled audio for speaker diarization
+                output = self.speaker_pipeline(resampled_audio_path)
+                # Clean up temporary file
+                import os
+                os.unlink(resampled_audio_path)
+                self.logger.info("Cleaned up temporary resampled audio file", extra={"trace_id": trace_id})
+            else:
+                # Use pyannote for speaker diarization
+                output = self.speaker_pipeline(audio_path)
             diarization = output.speaker_diarization
             
             speakers = []
@@ -126,6 +150,15 @@ class WhisperASR:
                 "speaker detection failed",
                 extra={"trace_id": trace_id, "error": str(e)}
             )
+            # Try to clean up any temporary files if they exist
+            if 'resampled_audio_path' in locals():
+                try:
+                    import os
+                    if os.path.exists(resampled_audio_path):
+                        os.unlink(resampled_audio_path)
+                        self.logger.info("Cleaned up temporary resampled audio file after error", extra={"trace_id": trace_id})
+                except Exception as cleanup_error:
+                    self.logger.warning(f"Failed to clean up temporary file: {cleanup_error}", extra={"trace_id": trace_id})
             return None
 
     def assign_speakers_to_segments(self, segments, speakers):
@@ -370,9 +403,19 @@ class WhisperASR:
             import tempfile
             import torchaudio as ta
             
+            # Ensure audio is at 16kHz for speaker detection
+            audio_for_speaker_detection = audio.cpu()
+            if sr != 16000:
+                self.logger.info(f"Resampling audio from {sr}Hz to 16000Hz for speaker detection", extra={"trace_id": trace_id})
+                resampler = torchaudio.transforms.Resample(sr, 16000)
+                audio_for_speaker_detection = resampler(audio_for_speaker_detection)
+                speaker_sr = 16000
+            else:
+                speaker_sr = sr
+                
             # Save temporary audio file for speaker detection
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
-                ta.save(tmp.name, audio.cpu(), sr)
+                ta.save(tmp.name, audio_for_speaker_detection, speaker_sr)
                 speakers = self.detect_speakers(tmp.name, trace_id)
                 import os
                 os.unlink(tmp.name)
