@@ -2,7 +2,33 @@
 
 This project is an automatic speech recognition service based on Whisper, with added speaker diarization functionality.
 
-![App screenshot](doc.PNG)
+![App screenshot](doc/doc.PNG)
+
+## Project Structure
+
+```
+ASRService/
+├── app/                    # Application code
+│   ├── main.py            # FastAPI application entry point
+│   ├── asr_service.py     # Core ASR functionality
+│   ├── auth.py            # Authentication module
+│   ├── config.py          # Configuration settings
+│   ├── logger.py          # Logging configuration
+│   ├── metrics.py         # Prometheus metrics
+│   ├── s3.py              # S3 storage integration
+│   ├── static/            # Static files (CSS, JS)
+│   └── templates/         # HTML templates
+├── docker/                 # Docker configuration
+│   ├── Dockerfile         # Docker image definition
+│   ├── docker-compose.yml # Docker Compose configuration
+│   └── start.sh           # Quick start script
+├── doc/                   # Documentation
+│   ├── doc.PNG           # Application screenshot
+│   └── CHANGELOG.md      # Version history
+├── requirements.txt       # Python dependencies
+├── .gitignore            # Git ignore rules
+└── README.md             # This file
+```
 
 ## Features
 
@@ -22,8 +48,46 @@ pip install -r requirements.txt
 
 ## Starting the Service
 
+### Method 1: Using Docker (Recommended)
+
+#### Prerequisites
+- Docker installed
+- Docker Compose installed
+
+#### Quick Start
+
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+# Navigate to the docker directory
+cd docker
+
+# Run the startup script (Linux/Mac)
+./start.sh
+
+# Or manually start with docker-compose
+docker-compose up -d
+```
+
+#### Docker Commands
+
+```bash
+# Build and start the service
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the service
+docker-compose down
+
+# Rebuild the image
+docker-compose build --no-cache
+```
+
+### Method 2: Manual Installation
+
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ## Usage
@@ -83,11 +147,37 @@ curl -X POST http://localhost:8000/transcribe \
 
 ## Environment Variables
 
-- `WHISPER_MODEL_PATH`: Path to the Whisper model
-- `DIARIZATION_MODEL_PATH`: Path to the speaker diarization model (default: pyannote/speaker-diarization-3.1)
-- `LOG_LEVEL`: Log level (default INFO)
-- `API_TOKENS`: List of allowed API tokens (comma separated)
+### Docker Environment Variables
+
+When using Docker, you can customize the service by setting environment variables in the `docker-compose.yml` file:
+
+```yaml
+environment:
+  - WHISPER_MODEL_PATH=openai/whisper-large-v3
+  - DIARIZATION_MODEL_PATH=pyannote/speaker-diarization-3.1
+  - LOG_LEVEL=INFO
+  - API_TOKENS=your_token_here,another_token
+```
+
+### Available Variables
+
+- `WHISPER_MODEL_PATH`: Whisper模型路径 (默认: openai/whisper-large-v3)
+- `DIARIZATION_MODEL_PATH`: 说话人分离模型路径 (默认: pyannote/speaker-diarization-3.1)
+- `LOG_LEVEL`: 日志级别 (默认: INFO)
+- `API_TOKENS`: 允许的API令牌列表 (逗号分隔)
 
 ## Speaker Diarization
 
 This project integrates the PyAnnote.audio library to implement speaker diarization functionality. When processing audio, the system automatically detects different speakers and assigns corresponding speaker labels to each transcription segment.
+
+## Development
+
+The project follows a modular structure with clear separation of concerns:
+
+- **app/main.py**: FastAPI application setup and routing
+- **app/asr_service.py**: Core ASR and speaker diarization logic
+- **app/auth.py**: Token-based authentication system
+- **app/config.py**: Configuration management
+- **app/logger.py**: Logging configuration
+- **app/metrics.py**: Prometheus metrics collection
+- **app/s3.py**: Optional S3 storage integration

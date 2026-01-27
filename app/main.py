@@ -8,10 +8,10 @@ from fastapi.responses import Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
-from logger import init_logger, init_audit_logger
-from auth import create_token, verify_token
-from asr_service import WhisperASR
-from metrics import *
+from .logger import init_logger, init_audit_logger
+from .auth import create_token, verify_token
+from .asr_service import WhisperASR
+from .metrics import *
 
 logger = init_logger("whisper_asr_service", os.getenv("LOG_LEVEL", "INFO"))
 audit_logger = init_audit_logger(os.getenv("LOG_LEVEL", "INFO"))
@@ -21,7 +21,7 @@ app.state.logger = logger
 app.state.audit_logger = audit_logger
 
 # Mount static files directory
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 asr = WhisperASR(os.getenv("WHISPER_MODEL_PATH"), logger)
 
@@ -92,7 +92,7 @@ def metrics():
 
 @app.get("/")
 async def serve_frontend():
-    return FileResponse("static/index.html")
+    return FileResponse("app/templates/index.html")
 
 
 @app.post("/transcribe")
