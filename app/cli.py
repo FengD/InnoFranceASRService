@@ -10,7 +10,7 @@ import click
 import torch
 import torchaudio
 
-from app.asr_service import WhisperASR
+from app.asr_service import WhisperASR, SUPPORTED_AUDIO_EXT
 from app.logger import init_logger
 
 
@@ -58,6 +58,9 @@ def main(audio_path: Path, language: str, chunk_length: int, output_path: Path, 
     AUDIO_PATH: Path to the audio file to transcribe (.wav or .mp3)
     """
     try:
+        if audio_path.suffix.lower() not in SUPPORTED_AUDIO_EXT:
+            raise click.ClickException("Unsupported audio format, only .wav and .mp3 are supported")
+
         # Check if CUDA is available
         device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Using device: {device}")
@@ -72,7 +75,7 @@ def main(audio_path: Path, language: str, chunk_length: int, output_path: Path, 
         
         # Transcribe audio
         logger.info("Starting transcription...")
-        segments = asr.transcribe(audio, sr, language, chunk_length, "cli")
+        segments = asr.transcribe(audio, sr, language, chunk_length, "cli", str(audio_path))
         
         # Format output
         result = {

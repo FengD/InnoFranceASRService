@@ -23,7 +23,7 @@ app.state.audit_logger = audit_logger
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-asr = WhisperASR(os.getenv("WHISPER_MODEL_PATH"), logger)
+asr = WhisperASR(os.getenv("WHISPER_MODEL_PATH", "openai/whisper-large-v3"), logger)
 
 
 def get_trace_id(request: Request):

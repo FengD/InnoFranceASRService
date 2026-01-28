@@ -1,17 +1,14 @@
 """
 MCP server for ASR Service with Speaker Diarization.
 """
+import argparse
 import os
 import json
-import tempfile
 from pathlib import Path
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
-import torch
 import torchaudio
-import requests
-from urllib.parse import urlparse
 
 from app.asr_service import WhisperASR
 from app.logger import init_logger
@@ -31,6 +28,15 @@ def get_asr_service():
         model_path = os.getenv("WHISPER_MODEL_PATH", "openai/whisper-large-v3")
         asr = WhisperASR(model_path, logger)
     return asr
+
+
+def _validate_audio_path(audio_path: str) -> Path:
+    path = Path(audio_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+    if path.suffix.lower() not in {".wav", ".mp3"}:
+        raise ValueError("Unsupported audio format, only .wav and .mp3 are supported")
+    return path
 
 
 @mcp.tool()
@@ -53,16 +59,17 @@ def transcribe_audio(
         Dictionary with 'success', 'result', and optional 'error' keys
     """
     try:
-        logger.info(f"Transcribing audio from {audio_path}")
+        path = _validate_audio_path(audio_path)
+        logger.info(f"Transcribing audio from {path}")
         
         # Initialize ASR service if needed
         asr_service = get_asr_service()
         
         # Load audio
-        audio, sr = torchaudio.load(audio_path)
+        audio, sr = torchaudio.load(str(path))
         
         # Transcribe audio
-        segments = asr_service.transcribe(audio, sr, language, chunk_length, "mcp")
+        segments = asr_service.transcribe(audio, sr, language, chunk_length, "mcp", str(path))
         
         # Format output
         result = {
@@ -113,43 +120,15 @@ def transcribe_audio_from_url(
     """
     try:
         logger.info(f"Downloading and transcribing audio from {audio_url}")
-        
-        # Validate URL
-        p = urlparse(audio_url)
-        if p.scheme not in ("http", "https"):
-            raise ValueError("Invalid URL scheme")
-            
-        # Determine file extension
-        ext = os.path.splitext(audio_url)[1].lower()
-        if ext not in [".wav", ".mp3"]:
-            raise ValueError("Unsupported audio format")
-            
-        # Download audio to temporary file
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-        tmp.close()
-        
-        headers = {
-            "User-Agent": "curl/7.88.1",
-            "Accept": "*/*"
-        }
-        
+
+        # Initialize ASR service if needed
+        asr_service = get_asr_service()
+        audio_path = asr_service.download_audio(audio_url, "mcp")
         try:
-            with requests.get(audio_url, stream=True, timeout=30, headers=headers) as r:
-                r.raise_for_status()
-                for chunk in r.iter_content(1024 * 1024):
-                    if chunk:
-                        with open(tmp.name, "ab") as f:
-                            f.write(chunk)
-                            
-            # Transcribe the downloaded audio
-            result = transcribe_audio(tmp.name, language, chunk_length, output_format)
-            return result
-            
+            return transcribe_audio(audio_path, language, chunk_length, output_format)
         finally:
-            # Clean up temporary file
-            if os.path.exists(tmp.name):
-                os.remove(tmp.name)
-                
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
     except Exception as e:
         logger.error(f"Error downloading or transcribing audio: {e}")
         return {
@@ -212,5 +191,45 @@ def transcribe_and_save(
         }
 
 
+def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="ASR Service MCP server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="MCP transport to use (default: stdio)",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Bind host for SSE transport (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Bind port for SSE transport (default: 8000)",
+    )
+    return parser.parse_args(argv)
+
+
+def run_server(transport: str, host: str, port: int) -> None:
+    if transport == "stdio":
+        mcp.run()
+        return
+    if transport == "sse":
+        try:
+            mcp.run(transport="sse", host=host, port=port)
+        except TypeError:
+            mcp.run(transport="sse")
+        return
+    raise ValueError(f"Unsupported transport: {transport}")
+
+
+def main(argv: Optional[list[str]] = None) -> None:
+    args = _parse_args(argv)
+    run_server(args.transport, args.host, args.port)
+
+
 if __name__ == "__main__":
-    mcp.run()
+    main()
