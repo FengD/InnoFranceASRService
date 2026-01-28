@@ -4,7 +4,8 @@ import requests
 import torch
 import torchaudio
 from urllib.parse import urlparse
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+from transformers import AutoModelForSpeechSeq2Seq
+from transformers.models.whisper import WhisperProcessor
 from pyannote.audio import Pipeline
 
 SUPPORTED_AUDIO_EXT = {".wav", ".mp3"}
@@ -27,7 +28,7 @@ class WhisperASR:
             use_safetensors=True
         ).to(self.device)
 
-        self.processor = AutoProcessor.from_pretrained(model_path)
+        self.processor = WhisperProcessor.from_pretrained(model_path)
         self.model.eval()
 
         # Initialize speaker diarization pipeline

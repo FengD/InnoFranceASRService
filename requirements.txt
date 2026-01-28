@@ -12,3 +12,5 @@ accelerate
 logger
 boto3
 pyannote.audio>=4.0.0
+click>=8.0.0
+mcp>=1.0.0
