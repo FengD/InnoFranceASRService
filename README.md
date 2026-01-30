@@ -31,6 +31,12 @@ sudo apt install -y ffmpeg
 python3 -m pip install -r requirements.txt
 ```
 
+Environment variables are optional. A sample file is provided:
+
+```bash
+cp env.example .env
+```
+
 ### Run the Web Service
 
 ```bash
@@ -123,7 +129,7 @@ Add to your MCP client configuration:
 python3 -m app.mcp_server --transport sse --host 0.0.0.0 --port 8000
 ```
 
-Use your MCP client to connect to the server host and port. The exact SSE endpoints are managed by FastMCP.
+Use your MCP client to connect to the server host and port. The exact SSE endpoints are managed by FastMCP, and the host/port are configured when FastMCP is initialized.
 
 ![App screenshot](docs/mcp_test.png)
 
@@ -150,6 +156,8 @@ Use your MCP client to connect to the server host and port. The exact SSE endpoi
 ```
 
 ### Environment Variables
+
+`env.example` lists all supported environment variables and sample values.
 
 - `WHISPER_MODEL_PATH`: Whisper model path (default: `openai/whisper-large-v3`)
 - `DIARIZATION_MODEL_PATH`: Speaker diarization model path (default: `pyannote/speaker-diarization-3.1`)
