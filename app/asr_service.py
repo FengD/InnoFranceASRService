@@ -200,6 +200,26 @@ class WhisperASR:
             segment["speaker"] = assigned_speaker
         
         return segments
+
+    def remap_speaker_labels(self, speakers):
+        """Normalize speaker labels to SPEAKER0, SPEAKER1, ..."""
+        if not speakers:
+            return []
+        unique = sorted({s.get("speaker") for s in speakers if s.get("speaker")})
+        mapping = {original: f"SPEAKER{i}" for i, original in enumerate(unique)}
+        remapped = []
+        for item in speakers:
+            speaker = item.get("speaker")
+            if speaker not in mapping:
+                continue
+            remapped.append(
+                {
+                    "start": item.get("start"),
+                    "end": item.get("end"),
+                    "speaker": mapping[speaker],
+                }
+            )
+        return remapped
         
     def merge_consecutive_speakers(self, segments):
         """Merge consecutive segments from the same speaker"""
@@ -251,7 +271,16 @@ class WhisperASR:
         
         return text
 
-    def transcribe(self, audio, sr, language, chunk_length, trace_id: str, audio_path: str = None):
+    def transcribe(
+        self,
+        audio,
+        sr,
+        language,
+        chunk_length,
+        trace_id: str,
+        audio_path: str = None,
+        speakers: list[dict] | None = None,
+    ):
         # Preprocess audio
         if audio.shape[0] > 1:
             audio = audio.mean(dim=0, keepdim=True)
@@ -272,8 +301,9 @@ class WhisperASR:
             )
             return self._transcribe_fallback(audio, sr, language, chunk_length, trace_id)
 
-        # Perform speaker diarization first
-        speakers = self.detect_speakers(audio_path, trace_id)
+        # Perform speaker diarization first (if not already provided)
+        if speakers is None:
+            speakers = self.detect_speakers(audio_path, trace_id)
         if not speakers:
             self.logger.warning(
                 "speaker detection failed, using fallback method",

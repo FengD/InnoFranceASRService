@@ -149,7 +149,19 @@ async def transcribe(
             )
 
         audio, sr = torchaudio.load(audio_path)
-        segments = asr.transcribe(audio, sr, language, chunk_length, trace_id, audio_path)
+        speaker_segments = None
+        if asr.speaker_pipeline and audio_path:
+            speaker_segments = asr.detect_speakers(audio_path, trace_id)
+            speaker_segments = asr.remap_speaker_labels(speaker_segments)
+        segments = asr.transcribe(
+            audio,
+            sr,
+            language,
+            chunk_length,
+            trace_id,
+            audio_path,
+            speakers=speaker_segments,
+        )
         SEGMENTS.observe(len(segments))
 
         audit_logger.info(
@@ -160,7 +172,11 @@ async def transcribe(
             }
         )
 
-        return {"language": language, "segments": segments}
+        return {
+            "language": language,
+            "segments": segments,
+            "speaker_segments": speaker_segments or [],
+        }
 
     finally:
         if audio_path and os.path.exists(audio_path):

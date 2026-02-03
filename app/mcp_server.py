@@ -69,14 +69,28 @@ def create_mcp(host: str, port: int) -> FastMCP:
             
             # Load audio
             audio, sr = torchaudio.load(str(path))
+
+            speaker_segments = None
+            if asr_service.speaker_pipeline:
+                speaker_segments = asr_service.detect_speakers(str(path), "mcp")
+                speaker_segments = asr_service.remap_speaker_labels(speaker_segments)
             
             # Transcribe audio
-            segments = asr_service.transcribe(audio, sr, language, chunk_length, "mcp", str(path))
+            segments = asr_service.transcribe(
+                audio,
+                sr,
+                language,
+                chunk_length,
+                "mcp",
+                str(path),
+                speakers=speaker_segments,
+            )
             
             # Format output
             result = {
                 "language": language,
-                "segments": segments
+                "segments": segments,
+                "speaker_segments": speaker_segments or [],
             }
             
             if output_format == "text":
