@@ -1,6 +1,6 @@
 ## InnoFrance ASR Service
 
-Transcribe audio to text with Whisper and optional speaker diarization. Use the web service, CLI, or MCP server (stdio or SSE) for local or remote workflows.
+Transcribe audio to text with Whisper and optional speaker diarization. Use the web service, CLI, or MCP server (stdio or SSE) for local or remote workflows. Supported formats: WAV, MP3, M4A, AAC, FLAC, OGG, OPUS.
 
 ![App screenshot](docs/doc.png)
 
@@ -48,7 +48,7 @@ Open `http://localhost:8000`.
 ### Web UI
 
 - Generate an access token.
-- Upload an audio file or provide an audio URL.
+- Upload an audio file or provide an audio URL (WAV, MP3, M4A, AAC, FLAC, OGG, OPUS).
 - Download JSON output with timestamps and speaker labels.
 
 ### API Usage (curl)
@@ -59,7 +59,7 @@ Get an access token:
 curl -X POST http://localhost:8000/auth/token
 ```
 
-Transcribe an upload:
+Transcribe an upload (WAV, MP3, M4A, AAC, FLAC, OGG, OPUS):
 
 ```bash
 curl -X POST http://localhost:8000/transcribe \
@@ -69,7 +69,7 @@ curl -X POST http://localhost:8000/transcribe \
   -F "chunk_length=30"
 ```
 
-Transcribe from URL:
+Transcribe from URL (WAV, MP3, M4A, AAC, FLAC, OGG, OPUS):
 
 ```bash
 curl -X POST http://localhost:8000/transcribe \

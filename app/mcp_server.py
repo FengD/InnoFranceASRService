@@ -10,7 +10,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 import torchaudio
 
-from app.asr_service import WhisperASR
+from app.asr_service import WhisperASR, SUPPORTED_AUDIO_EXT
 from app.logger import init_logger
 
 
@@ -33,8 +33,10 @@ def _validate_audio_path(audio_path: str) -> Path:
     path = Path(audio_path)
     if not path.exists():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
-    if path.suffix.lower() not in {".wav", ".mp3"}:
-        raise ValueError("Unsupported audio format, only .wav and .mp3 are supported")
+    if path.suffix.lower() not in SUPPORTED_AUDIO_EXT:
+        raise ValueError(
+            "Unsupported audio format, only .wav, .mp3, .m4a, .aac, .flac, .ogg, .opus are supported"
+        )
     return path
 
 
@@ -52,7 +54,7 @@ def create_mcp(host: str, port: int) -> FastMCP:
         Transcribe an audio file using ASR Service with Speaker Diarization.
         
         Args:
-            audio_path: Path to the audio file to transcribe (.wav or .mp3)
+        audio_path: Path to the audio file to transcribe (.wav, .mp3, .m4a, .aac, .flac, .ogg, .opus)
             language: Language code for transcription (default: fr)
             chunk_length: Chunk length in seconds (default: 30)
             output_format: Output format ('json' or 'text')
@@ -125,7 +127,7 @@ def create_mcp(host: str, port: int) -> FastMCP:
         Download and transcribe an audio file from URL using ASR Service with Speaker Diarization.
         
         Args:
-            audio_url: URL to the audio file to transcribe (.wav or .mp3)
+        audio_url: URL to the audio file to transcribe (.wav, .mp3, .m4a, .aac, .flac, .ogg, .opus)
             language: Language code for transcription (default: fr)
             chunk_length: Chunk length in seconds (default: 30)
             output_format: Output format ('json' or 'text')
@@ -163,7 +165,7 @@ def create_mcp(host: str, port: int) -> FastMCP:
         Transcribe an audio file and save the result to a file.
         
         Args:
-            audio_path: Path to the audio file to transcribe (.wav or .mp3)
+        audio_path: Path to the audio file to transcribe (.wav, .mp3, .m4a, .aac, .flac, .ogg, .opus)
             output_path: Path where the transcription result will be saved
             language: Language code for transcription (default: fr)
             chunk_length: Chunk length in seconds (default: 30)

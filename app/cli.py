@@ -55,11 +55,13 @@ def main(audio_path: Path, language: str, chunk_length: int, output_path: Path, 
     """
     Transcribe audio file using ASR Service with Speaker Diarization.
     
-    AUDIO_PATH: Path to the audio file to transcribe (.wav or .mp3)
+    AUDIO_PATH: Path to the audio file to transcribe (.wav, .mp3, .m4a, .aac, .flac, .ogg, .opus)
     """
     try:
         if audio_path.suffix.lower() not in SUPPORTED_AUDIO_EXT:
-            raise click.ClickException("Unsupported audio format, only .wav and .mp3 are supported")
+            raise click.ClickException(
+                "Unsupported audio format, only .wav, .mp3, .m4a, .aac, .flac, .ogg, .opus are supported"
+            )
 
         # Check if CUDA is available
         device = "cuda" if torch.cuda.is_available() else "cpu"

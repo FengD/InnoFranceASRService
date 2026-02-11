@@ -8,7 +8,7 @@ from transformers import AutoModelForSpeechSeq2Seq
 from transformers.models.whisper import WhisperProcessor
 from pyannote.audio import Pipeline
 
-SUPPORTED_AUDIO_EXT = {".wav", ".mp3"}
+SUPPORTED_AUDIO_EXT = {".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".opus"}
 
 
 class WhisperASR:

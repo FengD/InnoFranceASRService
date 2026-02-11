@@ -32,8 +32,8 @@
         <h2>Upload Audio File</h2>
         <form id="upload-form">
           <div class="form-group">
-            <label class="label" for="audio-file">Select Audio File (WAV or MP3):</label>
-            <input type="file" id="audio-file" class="input" accept=".wav,.mp3" required>
+            <label class="label" for="audio-file">Select Audio File (WAV, MP3, M4A, AAC, FLAC, OGG, OPUS):</label>
+            <input type="file" id="audio-file" class="input" accept=".wav,.mp3,.m4a,.aac,.flac,.ogg,.opus" required>
           </div>
           
           <div class="form-group">
@@ -112,8 +112,9 @@
         const apiToken = apiTokenInput.value;
         
         // Check file type
-        if (!file.name.endsWith('.wav') && !file.name.endsWith('.mp3')) {
-          errorMessageElement.textContent = 'Please select a WAV or MP3 file.';
+        const lowerName = file.name.toLowerCase();
+        if (!lowerName.endsWith('.wav') && !lowerName.endsWith('.mp3') && !lowerName.endsWith('.m4a') && !lowerName.endsWith('.aac') && !lowerName.endsWith('.flac') && !lowerName.endsWith('.ogg') && !lowerName.endsWith('.opus')) {
+          errorMessageElement.textContent = 'Please select a WAV, MP3, M4A, AAC, FLAC, OGG, or OPUS file.';
           return;
         }
         
